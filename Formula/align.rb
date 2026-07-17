@@ -5,7 +5,12 @@ class Align < Formula
   desc "AOT-compiled, data-oriented programming language"
   homepage "https://github.com/sanohiro/align"
   version "0.1.0"
-  license "MIT"
+  license any_of: ["MIT", "Apache-2.0"]
+
+  depends_on "llvm@22"
+  depends_on :macos
+  depends_on "openssl@3"
+  depends_on "zstd"
 
   on_macos do
     on_arm do
@@ -13,11 +18,6 @@ class Align < Formula
       sha256 "cdc8378b2147d929da6b4fae6853ad6cc4df98f3fffde66fc10a679e383ef712"
     end
   end
-
-  depends_on "llvm@22"
-  depends_on "openssl@3"
-  depends_on "zstd"
-  depends_on :macos
 
   def install
     libexec.install "alignc", "libalign_runtime.a"
