@@ -4,36 +4,53 @@
 class Align < Formula
   desc "AOT-compiled, data-oriented programming language"
   homepage "https://github.com/sanohiro/align"
-  version "0.1.0"
+  version "0.10.1"
   license any_of: ["MIT", "Apache-2.0"]
 
   depends_on "llvm@22"
   depends_on :macos
+  depends_on "libpq"
   depends_on "openssl@3"
   depends_on "zstd"
 
+  # The adjacent cache is keyed by these exact compiler bytes. Homebrew's cleaner may otherwise
+  # rewrite a Mach-O during installation and silently orphan every packaged entry.
+  skip_clean "libexec/alignc"
+
   on_macos do
     on_arm do
-      url "https://github.com/sanohiro/align/releases/download/v0.1.0/alignc-macos-aarch64.tar.gz"
-      sha256 "cdc8378b2147d929da6b4fae6853ad6cc4df98f3fffde66fc10a679e383ef712"
+      url "https://github.com/sanohiro/align/releases/download/v0.10.1/alignc-macos-aarch64.tar.gz"
+      sha256 "cf2fe9b0ef1b59713022050a4cc193a5db225ad2e80a56040bc84d723b4a6c8c"
     end
   end
 
   def install
-    libexec.install "alignc", "libalign_runtime.a"
+    libexec.install "alignc", "align-repl", "libalign_runtime.a", "share"
 
     # OpenSSL is keg-only, and alignc links capability libraries through the system C linker.
     # The wrapper makes the Homebrew prefixes visible without baking a machine-specific path into
     # the compiler or requiring users to export LIBRARY_PATH themselves.
-    (bin/"alignc").write <<~SH
-      #!/bin/bash
-      export LIBRARY_PATH="#{Formula["openssl@3"].opt_lib}:#{Formula["zstd"].opt_lib}${LIBRARY_PATH:+:$LIBRARY_PATH}"
-      exec "#{libexec}/alignc" "$@"
-    SH
-    (bin/"alignc").chmod 0755
+    #
+    # align-repl links every entry through the same driver, so it needs the same wrapper — a
+    # symlink into libexec would start the REPL but fail at the first entry that pulls a
+    # keg-only capability library. It also resolves libalign_runtime.a beside its own
+    # executable, which is why it is installed into libexec next to the archive.
+    %w[alignc align-repl].each do |tool|
+      (bin/tool).write <<~SH
+        #!/bin/bash
+        export LIBRARY_PATH="#{Formula["libpq"].opt_lib}:#{Formula["openssl@3"].opt_lib}:#{Formula["zstd"].opt_lib}${LIBRARY_PATH:+:$LIBRARY_PATH}"
+        exec "#{libexec}/#{tool}" "$@"
+      SH
+      (bin/tool).chmod 0755
+    end
   end
 
   test do
     assert_match "alignc #{version}", shell_output("#{bin}/alignc --version")
+    # `--version` deliberately, not a session: both binaries answer it before
+    # touching the toolchain, whereas a REPL entry compiles and links, which is
+    # more than a formula test should demand of the sandbox. The release
+    # workflow smoke-tests a real session against the artifact instead.
+    assert_match "align-repl #{version}", shell_output("#{bin}/align-repl --version")
   end
 end
