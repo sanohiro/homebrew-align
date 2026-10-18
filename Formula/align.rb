@@ -4,7 +4,7 @@
 class Align < Formula
   desc "AOT-compiled, data-oriented programming language"
   homepage "https://github.com/sanohiro/align"
-  version "0.10.1"
+  version "0.10.2"
   license any_of: ["MIT", "Apache-2.0"]
 
   depends_on "llvm@22"
@@ -19,8 +19,8 @@ class Align < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/sanohiro/align/releases/download/v0.10.1/alignc-macos-aarch64.tar.gz"
-      sha256 "cf2fe9b0ef1b59713022050a4cc193a5db225ad2e80a56040bc84d723b4a6c8c"
+      url "https://github.com/sanohiro/align/releases/download/v0.10.2/alignc-macos-aarch64.tar.gz"
+      sha256 "cf3f181a4db383312694b23f55e8ba95d4ed711392309878d0e283c7022c342f"
     end
   end
 
